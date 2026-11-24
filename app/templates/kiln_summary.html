@@ -1,0 +1,18 @@
+{% if kiln_rows %}
+<section class="panel kiln-mini" id="kiln-availability">
+  <div class="bench-head"><h3>烘干炉可领试算 · 在烘暂扣 / 复称先配</h3><a href="/kiln">烘干台账与开秤 →</a></div>
+  <div class="sheet"><table>
+    <thead><tr><th>果胶批</th><th>可领合计 g</th><th>已复称炉次 g</th><th>未送烘余料 g</th><th>暂扣 g</th><th>已领 g</th><th>炉数</th></tr></thead>
+    <tbody>
+    {% for row in kiln_rows %}
+      <tr><td><a href="/kiln?batch={{ row.batch }}">{{ row.batch }}</a></td>
+        <td class="num strong">{{ row.available_g }}</td><td class="num">{{ row.load_available_g }}</td>
+        <td class="num">{{ row.remainder_g }}</td>
+        <td class="num {% if row.withheld_g %}warn-text{% endif %}">{{ row.withheld_g }}</td>
+        <td class="num">{{ row.drawn_g }}</td><td class="num">{{ row.load_count }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="hint">在烘炉次按投炉量暂扣、预计出炉量不计入可领；对账不符的炉次暂停签发。进<a href="/kiln">烘干试算页</a>看每炉原因并开秤。</p>
+</section>
+{% endif %}

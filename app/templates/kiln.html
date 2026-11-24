@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>烘干试算 · 果胶批配试算台</title>
+  {% for sheet in ('theme', 'flow', 'bench', 'kiln') %}<link rel="stylesheet" href="/static/{{ sheet }}.css">{% endfor %}
+</head>
+<body>
+  <aside class="rail">
+    <a class="mark" href="/"><span aria-hidden="true">▰▱</span><h1>果胶批配试算台</h1></a>
+    <nav aria-label="试配导航">
+      {% for key,label in stages %}<a href="/trial/{{ key }}">{{ label }}</a>{% endfor %}
+      <a href="/kiln" aria-current="page">烘干试算</a>
+    </nav>
+    <small>烘干炉台账 · 实重验方</small>
+  </aside>
+  <div class="surface">
+    <header><h2>同批分炉烘干 · 可领试算</h2><span>{{ revision }} · 库存 g</span></header>
+    <main>
+      {% if fault %}<article class="panel fault" role="alert">{{ fault.code }}
+        {% if fault.field %}（字段 {{ fault.field }}）{% endif %}
+        {% if fault.available_g is defined %}：当前可领 {{ fault.available_g }} g，本单 {{ fault.need_g }} g，缺 {{ fault.short_g }} g{% endif %}
+        。按台账状态处理后重试。</article>{% endif %}
+      {% if notice %}<article class="panel ok-note" role="status">
+        {% if notice == 'seed' %}已铺陈车间情景：首炉已复称验方、下一炉在烘、未送烘余料照常可领。
+        {% elif notice == 'open' %}{{ '批次已建立。' if created else '批次已存在且资料一致，重复提交未改写台账。' }}
+        {% elif notice == 'charge' %}{{ '已送烘：该炉料从可领库存扣下。' if created else '该炉次已送烘登记，重复提交未重复扣减余料。' }}
+        {% elif notice == 'register' %}{% if not created %}出炉登记此前已成功，本次重试未把复称量重复计入可领量。
+          {% elif notice_meta.status == 'WEIGHED' %}复称验方对账相符，{{ notice_meta.released_g }} g 已计入可领，可先配。
+          {% else %}复称验方对不上水账/干物账，该炉已暂扣并暂停签发，未计入可领；见下方分账对账。{% endif %}
+        {% elif notice == 'draw' %}{{ '领料单已签发，炉次余量已原子扣减。' if created else '该领料单号已签发，重复提交未重复扣料。' }}
+        {% endif %}
+        <a href="/kiln">刷新台账</a>
+      </article>{% endif %}
+
+      <section class="panel kiln-setup">
+        <form method="get" action="/kiln" class="batch-pick">
+          <label>选择果胶批
+            <select name="batch" onchange="this.form.submit()">
+              {% for row in batches %}<option value="{{ row.batch }}" {{ 'selected' if view and row.batch == view.batch }}>{{ row.batch }} · 可领 {{ row.available_g }} g / 暂扣 {{ row.withheld_g }} g</option>{% endfor %}
+            </select>
+          </label>
+          <noscript><button type="submit">查看</button></noscript>
+        </form>
+        <form method="post" action="/kiln" class="inline-form">
+          <input type="hidden" name="action" value="seed">
+          <button type="submit" class="ghost">载入题面情景</button>
+        </form>
+        <form method="post" action="/kiln" class="inputs open-form">
+          <input type="hidden" name="action" value="open">
+          <label>新批号<input name="batch" placeholder="如 PJ-2611" value="{{ form.get('batch', '') }}" required></label>
+          <label>整批湿重 g<input name="stock_g" inputmode="numeric" placeholder="30000" value="{{ form.get('stock_g', '') }}" required></label>
+          <label>来料水分 %<input name="moisture_pct" inputmode="decimal" placeholder="20" value="{{ form.get('moisture_pct', '') }}" required></label>
+          <button type="submit">开批建账</button>
+        </form>
+      </section>
+
+      {% if not view %}
+      <section class="panel"><p>还没有烘干台账。开批建账，或「载入题面情景」查看：首炉已复称可先配、在烘炉次暂扣、未送烘余料照常可领。</p></section>
+      {% else %}
+      <section class="panel workstation">
+        <div class="bench-head"><h3>{{ view.batch }} · 哪些料可领、为何暂扣</h3>
+          <span class="state {{ 'pass' if view.withheld_g == 0 else 'warn-text' }}">可领 {{ view.available_g }} g · 暂扣 {{ view.withheld_g }} g</span></div>
+        <dl class="kpis">
+          <div><dt>可领合计 g</dt><dd>{{ view.available_g }}</dd></div>
+          <div><dt>已复称炉次可领 g</dt><dd>{{ view.load_available_g }}</dd></div>
+          <div><dt>未送烘余料 g</dt><dd>{{ view.remainder_g }}</dd></div>
+          <div><dt>暂扣合计 g</dt><dd class="warn-text">{{ view.withheld_g }}</dd></div>
+          <div><dt>累计已领 g</dt><dd>{{ view.drawn_g }}</dd></div>
+        </dl>
+        <div class="sheet"><table>
+          <thead><tr><th>来源 / 炉次</th><th>炉序</th><th>投炉 g</th><th>状态</th><th>复称实重 g</th><th>实测水分</th><th>已领 g</th><th>可领 g</th><th>暂扣 g</th><th>可领 / 暂扣原因</th></tr></thead>
+          <tbody>
+          {% for lot in view.loads %}
+            <tr data-code="{{ lot.availability_code }}">
+              <td>{{ lot.load }}</td><td class="num">{{ lot.seq }}</td><td class="num">{{ lot.charged_g }}</td>
+              <td>{{ {'DRYING':'在烘','WEIGHED':'已复称','HOLD':'对账暂扣'}.get(lot.status, lot.status) }}</td>
+              <td class="num">{{ lot.weighed_g if lot.weighed_g is not none else '—' }}</td>
+              <td class="num">{{ lot.moisture_out_pct or '—' }}</td>
+              <td class="num">{{ lot.drawn_g }}</td>
+              <td class="num strong">{{ lot.available_g }}</td>
+              <td class="num">{{ lot.withheld_g or '—' }}</td>
+              <td><span class="chip chip-{{ lot.availability_code|lower }}">
+                {% if lot.availability_code == 'WEIGHED' %}已复称 · 可领先配
+                {% elif lot.availability_code == 'IN_DRYER' %}在烘 · 暂扣，预计出炉量不计入库存
+                {% elif lot.availability_code == 'RECONCILE_FAILED' %}对账不符 · 暂停签发{% for c in lot.reconcile_codes %}（{{ c }}）{% endfor %}
+                {% endif %}
+              </span></td>
+            </tr>
+          {% endfor %}
+            <tr data-code="REMAINDER">
+              <td>未送烘余料</td><td>—</td><td class="num">—</td><td>在库</td><td>—</td><td class="num">{{ view.moisture_pct }}</td>
+              <td>—</td><td class="num strong">{{ view.remainder_g }}</td><td class="num">—</td>
+              <td><span class="chip chip-remainder">未送烘 · 照常可领</span></td>
+            </tr>
+          </tbody>
+        </table></div>
+        <p class="legend"><span class="chip chip-weighed">已复称 · 可领先配</span>
+          <span class="chip chip-remainder">未送烘 · 照常可领</span>
+          <span class="chip chip-in_dryer">在烘 · 暂扣，预计出炉量不计入</span>
+          <span class="chip chip-reconcile_failed">对账不符 · 暂停签发</span></p>
+        <p class="hint">开秤顺序：已复称炉次按炉序先配，不足部分再领未送烘余料；在烘炉次的预计出炉量一律不计入可领。</p>
+      </section>
+
+      <section class="kiln-actions">
+        <form method="post" action="/kiln" class="panel action-form">
+          <h3>送烘（余料转在烘暂扣）</h3>
+          <input type="hidden" name="action" value="charge"><input type="hidden" name="batch" value="{{ view.batch }}">
+          <label>送烘重量 g<input name="charged_g" inputmode="numeric" value="{{ form.get('charged_g', '') }}" required></label>
+          <label>炉次号（可留空自动编号）<input name="load" value="{{ form.get('load', '') }}" placeholder="{{ view.batch }}-F{{ '%02d'|format(view.loads|length + 1) }}"></label>
+          <button>送烘并暂扣</button>
+        </form>
+        <form method="post" action="/kiln" class="panel action-form">
+          <h3>出炉复称 · 按实重与实测水分验方</h3>
+          <input type="hidden" name="action" value="register"><input type="hidden" name="batch" value="{{ view.batch }}">
+          <label>炉次号<input name="load" list="kiln-load-ids" value="{{ form.get('load', '') }}" required>
+            <datalist id="kiln-load-ids">{% for lot in view.loads if lot.status == 'DRYING' %}<option value="{{ lot.load }}">在烘 {{ lot.charged_g }} g</option>{% endfor %}</datalist>
+          </label>
+          <label>实重 g<input name="weighed_g" inputmode="numeric" value="{{ form.get('weighed_g', '') }}" required></label>
+          <label>实测水分 %<input name="moisture_pct" inputmode="decimal" value="{{ form.get('moisture_pct', '') }}" required></label>
+          <label>干物损耗上限 万分之<input name="tolerance_bp" inputmode="numeric" placeholder="50" value="{{ form.get('tolerance_bp', '') }}"></label>
+          <button>复称登记并对账</button>
+        </form>
+        <form method="post" action="/kiln" class="panel action-form">
+          <h3>领料开秤（同炉并发不得领超）</h3>
+          <input type="hidden" name="action" value="draw"><input type="hidden" name="batch" value="{{ view.batch }}">
+          <label>领料重量 g<input name="amount_g" inputmode="numeric" value="{{ form.get('amount_g', '') }}" required></label>
+          <label>指定炉次（可留空按先配顺序）<input name="load" list="kiln-load-ids-all" value="{{ form.get('load', '') }}">
+            <datalist id="kiln-load-ids-all">{% for lot in view.loads if lot.status == 'WEIGHED' %}<option value="{{ lot.load }}">可领 {{ lot.available_g }} g</option>{% endfor %}</datalist>
+          </label>
+          <label>领料单号 / 幂等键（重试填原号）<input name="req" value="{{ form.get('req', '') }}" placeholder="留空则按新单"></label>
+          <button>提交领料单</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h3>分账对账 · 水分蒸发与干物损耗分别核销</h3>
+        <div class="ledger-grid">
+        {% for lot in view.loads if lot.reconcile %}
+          {% set rc = lot.reconcile %}
+          <article class="ledger-card {{ 'ledger-bad' if not rc.balanced else 'ledger-ok' }}">
+            <header><strong>{{ lot.load }}</strong>
+              <span class="chip {{ 'chip-weighed' if rc.balanced else 'chip-reconcile_failed' }}">{{ '对账相符 · 已签发可领' if rc.balanced else '对不上 · 暂停签发' }}</span>
+            </header>
+            <dl>
+              <dt>水账</dt><dd>入炉水 {{ rc.water.in_g }} g − 出炉水 {{ rc.water.out_g }} g ＝ <b>水分蒸发 {{ rc.water.evaporated_g }} g</b>
+                <span class="{{ 'pass' if rc.water.ok else 'fail' }}">{{ '平' if rc.water.ok else rc.water.code }}</span></dd>
+              <dt>干物账</dt><dd>入炉干物 {{ rc.dry.in_g }} g − 出炉干物 {{ rc.dry.out_g }} g ＝ <b>干物损耗 {{ rc.dry.loss_g }} g</b>
+                （约 {{ rc.dry.loss_bp }}‱ / 上限 {{ rc.dry.max_loss_bp }}‱）
+                <span class="{{ 'pass' if rc.dry.ok else 'fail' }}">{{ '平' if rc.dry.ok else rc.dry.code }}</span></dd>
+            </dl>
+          </article>
+        {% else %}
+          <p>尚无出炉复称记录。复称登记后在此分别核对水账与干物账。</p>
+        {% endfor %}
+        </div>
+      </section>
+
+      <section class="panel">
+        <h3>领料签发记录（近 20 单）</h3>
+        <div class="sheet"><table>
+          <thead><tr><th>领料单号</th><th>领料 g</th><th>指定炉</th><th>分摊</th><th>UTC 时间</th></tr></thead>
+          <tbody>
+          {% for req in view.requisitions %}
+            <tr><td>{{ req.req[:16] }}</td><td class="num">{{ req.amount_g }}</td><td>{{ req.load or '按先配顺序' }}</td>
+              <td>{% for line in req.lines %}{{ line.source }} {{ line.grams }} g{% if not loop.last %}；{% endif %}{% endfor %}</td>
+              <td class="num">{{ req.created_at }}</td></tr>
+          {% else %}<tr><td colspan="5">还没有领料单。</td></tr>{% endfor %}
+          </tbody>
+        </table></div>
+      </section>
+      {% endif %}
+    </main>
+    <footer><span>{{ revision }}</span><span>可领 = 已复称结余 + 未送烘余料；在烘与对账不符不计入</span><a href="/healthz">服务状态</a></footer>
+  </div>
+</body></html>

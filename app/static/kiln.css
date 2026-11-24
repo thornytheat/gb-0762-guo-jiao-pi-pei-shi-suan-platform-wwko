@@ -1,0 +1,34 @@
+.ok-note { border-left: 4px solid var(--ok); color: var(--ok); padding: 10px var(--pad); display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.ok-note a { margin-left: auto; }
+.warn-text { color: var(--warn); }
+.strong { font-weight: 750; }
+.kiln-setup { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; padding: 12px var(--pad); }
+.batch-pick label { display: grid; gap: 4px; font-size: 12px; color: var(--ink-muted); }
+.batch-pick select { padding: 7px 10px; border: 1px solid var(--line-strong); border-radius: var(--pill); background: var(--surface); min-width: 280px; }
+.inline-form { margin: 0; }
+button.ghost { background: var(--surface); color: var(--accent); border-style: dashed; }
+.open-form { flex: 1 1 420px; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: end; margin: 0; }
+.open-form label { font-size: 12px; color: var(--ink-muted); }
+.open-form button { height: 34px; }
+.kiln-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--gap); }
+.action-form { padding-bottom: 14px; display: grid; gap: 8px; align-content: start; }
+.action-form h3 { padding: 0; }
+.action-form label { display: grid; gap: 4px; font-size: 12px; color: var(--ink-muted); }
+.action-form input { width: 100%; padding: 7px; font: 13px var(--font-num); border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); }
+.action-form button { justify-self: start; margin-top: 4px; }
+.hint { color: var(--ink-muted); font-size: 12px; }
+.legend { display: flex; gap: 8px; flex-wrap: wrap; margin: 0; }
+.chip { display: inline-block; padding: 3px 10px; border-radius: var(--pill); font-size: 12px; white-space: nowrap; }
+.chip-weighed { background: #e2f0e7; color: var(--ok); }
+.chip-remainder { background: #e7edf7; color: #2c4d80; }
+.chip-in_dryer { background: #f6e7cd; color: var(--warn); }
+.chip-reconcile_failed { background: #f8dfe2; color: var(--bad); font-weight: 650; }
+.ledger-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 10px; padding: 0 var(--pad) 14px; }
+.ledger-card { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; background: var(--surface-2); }
+.ledger-card header { all: unset; display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ledger-card dl { margin: 0; display: grid; gap: 6px; }
+.ledger-card dt { font-size: 11px; color: var(--ink-muted); font-weight: 700; }
+.ledger-card dd { margin: 0; font-size: 12.5px; }
+.ledger-bad { border-color: var(--bad); }
+.kiln-mini .chip { font-size: 11px; }
+@media (max-width: 980px) { .kiln-actions { grid-template-columns: 1fr; } .open-form { grid-template-columns: repeat(2, minmax(0,1fr)); } }

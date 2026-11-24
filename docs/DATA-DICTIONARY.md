@@ -9,3 +9,11 @@
 寻优用到期日、批号排序，以最少领用批为首要目标，同批数优先最大化较早批次的用量。超出 14 个可用整步批或 300,000 状态上限时报错。不可行时整单留待处理，库存保持原量。结算库存包含已采信但过期与不足整步的库存，冲突批计入隔离清单。
 
 同份化验文本和同参数计算同一 SHA-256 标识。运行保存源摘要、计划、候选提案、UTC 建立时间、耗时、规则和逐阶段证据。归档经同目录临时文件写入和原子发布，重复提交返回既有快照。证据摘要以排序键、UTF-8 和紧凑 JSON 复算。
+
+## 烘干炉台账实体（`/kiln`，SQLite `kiln.sqlite3`）
+
+- `kiln_batches`：`batch` 批号主键；`stock_g` 整批湿重；`moisture_bp` 来料水分（万分比，20.00%=2000）；`remainder_g` 未送烘余料，送烘时扣减，领料末位扣减。
+- `kiln_loads`（炉次）：`load` 炉次号主键（不传则 `<批号>-F<两位炉序>`）；`batch/seq`；`charged_g` 投炉湿重；`moisture_in_bp` 投料时来料水分快照；`status ∈ DRYING|WEIGHED|HOLD`；`weighed_g/moisture_out_bp` 出炉复称实重与实测水分；`drawn_g` 该炉累计已领；`ledger_json` 水账/干物账证据。
+- `kiln_requisitions` / `kiln_req_lines`：领料单（`req` 幂等键、`amount_g`、可选 `load_ref`）与分摊行；行 `source` 为炉次号或 `REMAINDER`。
+- 试算视图 `GET /api/kiln/batches/<batch>` 与 `/kiln?batch=<batch>`：每炉给 `available_g/withheld_g/availability_code/issuance`。原因码：`WEIGHED`（已复称可领）、`REMAINDER`（未送烘照常可领）、`IN_DRYER`（在烘暂扣，预计出炉量不入账，附 `reason_code=EXPECTED_OUTPUT_NOT_BOOKED`）、`RECONCILE_FAILED`（对账不符，`issuance=PAUSED`，并带 `reconcile_codes`）。
+- 接口：`POST /api/kiln/batches` 开批；`POST /api/kiln/loads` 送烘；`POST /api/kiln/loads/<load>/register` 复称验方（可传 `tolerance_bp`）；`POST /api/kiln/requisitions` 领料（可传 `req`、`load`）；`GET /api/kiln/batches` 列表；`POST /api/kiln/demo` 题面情景。写接口新鲜创建返回 201，幂等回放返回 200 且 `created=false`；冲突 409，缺料/状态不允许 422，找不到 404。错误体为 `{"code", ...明细}`，缺料含 `available_g/need_g/short_g`。
