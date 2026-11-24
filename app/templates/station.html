@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ labels[stage] }} · 果胶批配试算台</title>
+  {% for sheet in ('theme', 'flow', 'bench') %}<link rel="stylesheet" href="/static/{{ sheet }}.css">{% endfor %}
+  <script defer src="/static/trial.js"></script>
+</head>
+<body>
+  <aside class="rail">
+    <a class="mark" href="/"><span aria-hidden="true">▰▱</span><h1>果胶批配试算台</h1></a>
+    <nav aria-label="试配导航">{% for key,label in stages %}<a href="/trial/{{ key }}{% if mode == 'clean' %}?sample=clean{% endif %}" {% if stage == key %}aria-current="page"{% endif %}>{{ label }}</a>{% endfor %}</nav>
+    <small>小试配仓</small>
+  </aside>
+  <div class="surface">
+    <header><h2>{{ labels[stage] }}</h2><span>{{ revision }}{% if form_plan.as_of %} · {{ form_plan.as_of }}{% endif %}</span></header>
+    <main>
+      <ol class="process" aria-label="水平试配工序">
+      {% for key,label in stages %}<li data-current="{{ 'true' if stage == key else 'false' }}"><a href="/trial/{{ key }}{% if mode == 'clean' %}?sample=clean{% endif %}"><i aria-hidden="true"></i>{{ label }}</a></li>{% endfor %}
+      </ol>
+      {% if stage != 'certificate' %}{% include 'material.html' %}{% endif %}
+      {% if error %}<article class="panel fault" role="alert">{{ error }}。检查投料资料后重试。</article>{% endif %}
+      {% if stage in ['batches','certificate'] %}{% include 'records.html' %}{% elif data %}
+        {% if stage in ['assay','dry','formula'] %}{% include 'measure.html' %}{% endif %}
+        {% if stage in ['blend','stock'] %}{% include 'scale.html' %}{% endif %}
+        {% if data.assay.isolated %}<section class="panel"><details id="assay-notes"><summary>化验隔离 · {{ data.assay.isolated|length }} 行</summary><div class="sheet"><table><thead><tr><th>行号</th><th>原因</th><th>原值</th></tr></thead><tbody>{% for row in data.assay.isolated %}<tr><td>{{ row.line }}</td><td>{{ row.code }}</td><td>{{ row.raw|join(' · ') }}</td></tr>{% endfor %}</tbody></table></div></details></section>{% endif %}
+      {% endif %}
+    </main>
+    <footer><span>{{ revision }}</span><span>库存 g · 凝胶 SAG</span><a href="/healthz">服务状态</a></footer>
+  </div>
+</body></html>

@@ -1,0 +1,11 @@
+{% set blend = data.blend %}{% set stock = data.stock %}
+<section class="panel workstation">
+  <div class="bench-head"><h3>{{ '称量分配结果' if stage == 'blend' else '配方余量轨' }}</h3><span class="state {{ 'pass' if blend.status == 'FEASIBLE' else 'fail' }}">{{ blend.status }}</span></div>
+  <dl class="kpis"><div><dt>计划 g</dt><dd>{{ data.plan.target_g }}</dd></div><div><dt>领用刻度 g</dt><dd>{{ data.plan.step_g }}</dd></div><div><dt>选用批</dt><dd>{{ blend.batch_count }}</dd></div><div><dt>干物 g</dt><dd>{{ blend.dry_g or '—' }}</dd></div><div><dt>凝胶 SAG</dt><dd>{{ blend.gel_sag or '—' }}</dd></div></dl>
+  {% if stock %}<div class="remaining"><div>期初 {{ stock.begin_g }} g</div><div class="meter" title="领用 {{ stock.issued_g }} g，余量 {{ stock.end_g }} g"><meter min="0" max="{{ stock.begin_g or 1 }}" value="{{ stock.issued_g }}"></meter></div><div>余量 {{ stock.end_g }} g</div></div><p class="quantity">领用 {{ stock.issued_g }} g · 缺口 {{ stock.shortage_g }} g</p>{% endif %}
+  <details id="blend-proof"><summary>展开配方校验</summary><dl class="equations"><dt>可分配整步库存</dt><dd>{{ blend.step_capacity_g }} g</dd><dt>搜索状态数</dt><dd>{{ blend.visited }}</dd><dt>干物凝胶矩</dt><dd>{{ blend.gel_moment or '—' }}</dd></dl></details>
+</section>
+<section class="panel"><h3>{{ '批次用料证据' if stage == 'blend' else '库存核销明细' }}</h3><div class="sheet"><table>
+{% if stock %}<thead><tr><th>批号</th><th>原件行</th><th>期初 (g)</th><th>领用 (g)</th><th>期末 (g)</th><th>原因</th></tr></thead><tbody>{% for lot in stock.rows %}<tr data-issued="{{ lot.issued_g > 0 }}"><td>{{ lot.lot }}</td><td>{{ lot.line }}</td><td class="num">{{ lot.begin_g }}</td><td class="num">{{ lot.issued_g }}</td><td class="num">{{ lot.end_g }}</td><td>{{ lot.code }}</td></tr>{% else %}<tr><td colspan="6">补充化验批次后再试。</td></tr>{% endfor %}</tbody>
+{% else %}<thead><tr><th>批号</th><th>原件行</th><th>到期日</th><th>领用 (g)</th><th>凝胶 (毫 SAG)</th></tr></thead><tbody>{% for lot in data.dry.lots if lot.lot in blend.allocation %}<tr><td>{{ lot.lot }}</td><td>{{ lot.line }}</td><td>{{ lot.expires }}</td><td class="num">{{ blend.allocation[lot.lot] }}</td><td class="num">{{ lot.gel_msag }}</td></tr>{% else %}<tr><td colspan="5">调整约束后重新试算。</td></tr>{% endfor %}</tbody>{% endif %}
+</table></div></section>

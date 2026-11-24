@@ -1,0 +1,6 @@
+<section class="panel workstation">
+  <h3>{{ '试算批记录' if stage == 'batches' else '试配签发记录' }}</h3>
+  {% if record %}<p role="status">{{ '已归档' if fresh else '已复用' }} {{ record.batch_id[:12] }}</p>{% endif %}
+  {% if pack %}<p>{{ '可试配' if pack.can_trial else '试配暂缓' }} · {{ pack.stock_lines }} 库存行 · {{ pack.isolation_lines }} 隔离行</p><p class="digest">{{ pack.integrity_sha256 }}</p><a class="download" href="/api/export/{{ pack.batch_id }}">下载配料证据</a>{% endif %}
+  <div class="sheet"><table><thead><tr><th>试算批</th><th>建立时间 UTC</th><th>耗时 (ms)</th></tr></thead><tbody>{% for row in entries %}<tr><td><a href="/trial/certificate?batch={{ row.batch_id }}">{{ row.batch_id[:16] }}</a></td><td>{{ row.created_at }}</td><td class="num">{{ row.elapsed_ms }}</td></tr>{% else %}<tr><td colspan="3"><a href="/trial/batches">先留档一批试配。</a></td></tr>{% endfor %}</tbody></table></div>
+</section>

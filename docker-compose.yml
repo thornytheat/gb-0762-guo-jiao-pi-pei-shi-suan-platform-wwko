@@ -1,0 +1,10 @@
+name: grain-pectin
+services:
+  app:
+    build: .
+    ports:
+      - '18461:8000'
+    volumes:
+      - trials:/var/pectin
+volumes:
+  trials:

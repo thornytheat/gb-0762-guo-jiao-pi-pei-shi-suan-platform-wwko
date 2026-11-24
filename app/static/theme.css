@@ -1,0 +1,22 @@
+:root {
+  --bg: #f2eee9;
+  --surface: #fffdf9;
+  --surface-2: #eee5da;
+  --ink: #352719;
+  --ink-muted: #695442;
+  --line: #e2d5c8;
+  --line-strong: #c9ae94;
+  --accent: #ba5910;
+  --accent-ink: #fff7ee;
+  --ok: #286445;
+  --warn: #8a5300;
+  --bad: #9f2430;
+  --info: #685b53;
+  --font-ui: 'Noto Sans CJK SC','PingFang SC',sans-serif;
+  --font-num: ui-monospace,Menlo,monospace;
+  --radius: 15px;
+  --pill: 100px;
+  --pad: 18px;
+  --gap: 14px;
+  --shadow: 0 5px 18px #53361b0c;
+}

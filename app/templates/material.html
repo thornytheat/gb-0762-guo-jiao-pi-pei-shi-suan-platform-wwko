@@ -1,0 +1,10 @@
+<form class="materials" method="post">
+  <label for="trial-sample">试配资料</label><select name="sample" id="trial-sample"><option value="dirty" {{ 'selected' if mode == 'dirty' }}>来料争议样本</option><option value="clean" {{ 'selected' if mode == 'clean' }}>标准配方样本</option><option value="custom" {{ 'selected' if mode == 'custom' }}>自填资料</option></select>
+  <button id="trial-run">{{ '留档或重跑' if stage == 'batches' else '重新试算' }}</button>
+  <output id="pending" aria-live="polite"></output>
+  <details id="trial-input" {% if mode == 'custom' %}open{% endif %}><summary>查看投料资料</summary>
+    <div class="inputs">{% for key,label in fields.items() %}<label>{{ label }}<input name="{{ key }}" value="{{ form_plan.get(key, '') }}"></label>{% endfor %}
+    <label class="wide">化验 CSV<textarea name="assays" rows="5">{{ form_assays }}</textarea></label>
+    <label class="wide">待验称量 JSON<textarea name="proposal" rows="2">{{ form_proposal }}</textarea></label></div>
+  </details>
+</form>
